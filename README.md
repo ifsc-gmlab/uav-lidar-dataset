@@ -2,6 +2,8 @@
 
 PX4 + 机载激光雷达无人机原始飞行记录（ROS1 bag），含 IMU、多源里程计与 3D 点云，用于状态估计、SLAM 与自主导航算法研究。
 
+> 📄 [论文介绍视频](video.mp4) — 数据集背景与方法概述。
+
 ![trajectory + lidar map](docs/preview/underactuated/preview_16-20-29.png)
 
 ## 数据集结构
@@ -12,6 +14,7 @@ PX4 + 机载激光雷达无人机原始飞行记录（ROS1 bag），含 IMU、�
 │   └── fully-actuated-tunnel/    # 全驱-隧道场景
 ├── scripts/                       # 数据读取与可视化脚本
 ├── docs/preview/                  # 各场景预览图
+├── video.mp4                      # 论文介绍视频
 └── README.md
 ```
 
@@ -22,7 +25,8 @@ PX4 + 机载激光雷达无人机原始飞行记录（ROS1 bag），含 IMU、�
 | 飞控 | PX4 (MAVROS) |
 | 激光雷达 | 机载固态 LiDAR（10Hz 点云输出） |
 | IMU | 飞控内置（50Hz） + 激光雷达内置（200Hz） |
-| 平台 | 四旋翼无人机 |
+| 欠驱平台 | 四旋翼无人机 |
+| 全驱平台 | 六轴全驱动无人机（可侧飞、定点悬停） |
 
 ## 话题列表
 
@@ -51,7 +55,19 @@ PX4 + 机载激光雷达无人机原始飞行记录（ROS1 bag），含 IMU、�
 
 ### 全驱-隧道（fully-actuated-tunnel）
 
-> 待添加
+> 因 GitHub LFS 单文件 2GB 限制，每个长 bag 按时间边界切成 3 个分片（`_part1/2/3.bag`）。
+> 用户下载后用 `rosbags` 的 `AnyReader([part1, part2, part3])` 或 `rosbag play part1 part2 part3` 即可拼接使用。
+
+| 文件 | 时长 | 大小 | 场景 | 预览 |
+|------|------|------|------|------|
+| `2026-01-12-16-42-10_part1.bag` | ~320s | ~1.82GB | 全驱平台隧道飞行（前半段） | [preview](docs/preview/fully-actuated/preview_16-42-10.png) |
+| `2026-01-12-16-42-10_part2.bag` | ~130s | ~1.82GB | 全驱平台隧道飞行（中段） | 同上 |
+| `2026-01-12-16-42-10_part3.bag` | ~65s | ~1.20GB | 全驱平台隧道飞行（后半段） | 同上 |
+| `2026-01-12-17-05-23_part1.bag` | ~310s | ~1.82GB | 全驱平台隧道飞行（前半段） | [preview](docs/preview/fully-actuated/preview_17-05-23.png) |
+| `2026-01-12-17-05-23_part2.bag` | ~130s | ~1.82GB | 全驱平台隧道飞行（中段） | 同上 |
+| `2026-01-12-17-05-23_part3.bag` | ~55s | ~1.03GB | 全驱平台隧道飞行（后半段） | 同上 |
+
+![fully-actuated tunnel preview](docs/preview/fully-actuated/preview_16-42-10.png)
 
 ## 快速开始
 
@@ -78,17 +94,39 @@ python scripts/inspect_bag.py bags/underactuated-tunnel/2025-11-25-16-20-29.bag
 python scripts/plot_map_trajectory.py bags/underactuated-tunnel/2025-11-25-16-26-22.bag output.png
 ```
 
+### 使用分片 bag（全驱-隧道场景）
+
+因 GitHub LFS 单文件 2GB 限制，全驱场景的长 bag 被切成 3 个分片（`_part1/2/3.bag`）。数据无损，按时间边界切分。
+
+**直接读取（推荐，无需合并）：**
+
+```python
+from rosbags.highlevel import AnyReader
+from pathlib import Path
+
+# 把同一原始 bag 的所有分片作为列表传入，自动按时间戳拼接
+bag_paths = [
+    Path("bags/fully-actuated-tunnel/2026-01-12-16-42-10_part1.bag"),
+    Path("bags/fully-actuated-tunnel/2026-01-12-16-42-10_part2.bag"),
+    Path("bags/fully-actuated-tunnel/2026-01-12-16-42-10_part3.bag"),
+]
+with AnyReader(bag_paths) as reader:
+    for conn, ts, raw in reader.messages():
+        ...
+```
+
+**ROS 命令行播放：**
+
+```bash
+rosbag play 2026-01-12-16-42-10_part1.bag 2026-01-12-16-42-10_part2.bag 2026-01-12-16-42-10_part3.bag
+```
+
+**维护者工具（重新分片）：**
+
+```bash
+# 把超过 2GB 的 bag 切成每片 ≤1800MB
+python scripts/split_bag.py large.bag --max-size 1800
+```
+
 > **注意：** bag 文件使用 Git LFS 管理，请先安装 [Git LFS](https://git-lfs.github.com/) 再 clone。
 
-## 引用
-
-如果本数据集对您的研究有帮助，请引用：
-
-```bibtex
-@misc{uav-lidar-dataset,
-  title  = {UAV LiDAR Dataset},
-  author = {IFSC GMLab},
-  year   = {2025},
-  url    = {https://github.com/ifsc-gmlab/uav-lidar-dataset}
-}
-```
