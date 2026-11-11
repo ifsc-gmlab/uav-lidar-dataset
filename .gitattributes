@@ -1,6 +1,9 @@
-# Track bag files with Git LFS
+# Track bag files with Git LFS（通常 >100MB，必须走 LFS）
 *.bag filter=lfs diff=lfs merge=lfs -text
 *.bag.active filter=lfs diff=lfs merge=lfs -text
 
-# Track video files with Git LFS
+# Track video files with Git LFS（外景/介绍视频可能很大）
 *.mp4 filter=lfs diff=lfs merge=lfs -text
+*.MP4 filter=lfs diff=lfs merge=lfs -text
+
+# 注意：*.ulg（PX4 日志，通常几十 MB）不使用 LFS，以普通 Git 对象存储，节省 LFS 配额。
